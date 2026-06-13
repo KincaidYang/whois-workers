@@ -5,8 +5,8 @@ compatibility_flags = ["nodejs_compat"]
 
 [[kv_namespaces]]
 binding = "WHOIS_CACHE"
-id = "whois_cache"
-preview_id = "whois_cache_preview"
+id = "your_kv_namespace_id"
+preview_id = "your_kv_namespace_preview_id"
 
 [triggers]
 crons = ["0 0 * * *"]

@@ -126,15 +126,17 @@ and their IDN equivalents (`.中国` `.香港` `.한국` etc.)
 ```bash
 npm install
 
-# Create a KV namespace and copy the returned id into wrangler.toml
+# Create a KV namespace
 npx wrangler kv namespace create WHOIS_CACHE
 
-# Local development
+# Local development (replace the id placeholder in wrangler.toml first)
 npm run dev
 
-# Deploy
+# Deploy via CLI
 npm run deploy
 ```
+
+Alternatively, if deploying through the Cloudflare Dashboard (recommended for public repos): go to **Worker → Settings → Bindings**, add a KV Namespace binding named `WHOIS_CACHE`, and select the namespace you created. The dashboard binding takes precedence over `wrangler.toml`.
 
 ### Configuration (`wrangler.toml` vars)
 
