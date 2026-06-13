@@ -1,6 +1,7 @@
 # whois-workers
 
 [![中文文档](https://img.shields.io/badge/文档-中文版-blue)](README_ZH.md)
+[![Deploy to Cloudflare Workers](https://deploy.workers.cloudflare.com/button)](https://deploy.workers.cloudflare.com/?url=https://github.com/KincaidYang/whois-workers)
 
 A WHOIS / RDAP lookup service running on Cloudflare Workers, built with TypeScript and [Hono](https://hono.dev). A Cloudflare Workers rewrite of [KincaidYang/whois](https://github.com/KincaidYang/whois).
 
@@ -123,12 +124,18 @@ and their IDN equivalents (`.中国` `.香港` `.한국` etc.)
 
 ## Deployment
 
+### One-click (recommended)
+
+Click the **Deploy to Cloudflare Workers** button above. Cloudflare will fork this repository, create the required KV namespace automatically, and deploy the worker — no manual configuration needed.
+
+### CLI
+
 ```bash
 npm install
 
 # Create a KV namespace
 npx wrangler kv namespace create WHOIS_CACHE
-# Copy the returned id into wrangler.toml [[kv_namespaces]] → id / preview_id
+# Paste the returned id into wrangler.toml [[kv_namespaces]] → id / preview_id
 
 # Local development
 npm run dev

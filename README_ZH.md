@@ -1,6 +1,7 @@
 # whois-workers
 
 [![English](https://img.shields.io/badge/Docs-English-blue)](README.md)
+[![Deploy to Cloudflare Workers](https://deploy.workers.cloudflare.com/button)](https://deploy.workers.cloudflare.com/?url=https://github.com/KincaidYang/whois-workers)
 
 基于 Cloudflare Workers 的 WHOIS / RDAP 查询服务，使用 TypeScript 和 [Hono](https://hono.dev) 构建。[KincaidYang/whois](https://github.com/KincaidYang/whois) 的 Cloudflare Workers 重写版本。
 
@@ -122,6 +123,12 @@ Cron Trigger 每日拉取 IANA 最新 RDAP bootstrap 数据并写入 KV，无需
 及其 IDN 对应（`.中国` `.香港` `.한국` 等）
 
 ## 部署
+
+### 一键部署（推荐）
+
+点击上方 **Deploy to Cloudflare Workers** 按钮，Cloudflare 会自动 fork 仓库、创建所需的 KV namespace 并完成部署，无需任何手动配置。
+
+### CLI 部署
 
 ```bash
 npm install
