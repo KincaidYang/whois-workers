@@ -204,6 +204,21 @@ app.get("/autnum/:resource", async (c) => {
 // Health check
 app.get("/health", (c) => c.json({ status: "ok" }));
 
+// Root auto-detect: /1.1.1.1  /AS13335  /example.com
+app.get("/:resource{.+}", async (c) => {
+  const resource = c.req.param("resource").toLowerCase();
+  if (isIP(resource) || isCIDR(resource)) {
+    return c.redirect(`/ip/${resource}`, 302);
+  }
+  if (isASN(resource)) {
+    return c.redirect(`/autnum/${resource}`, 302);
+  }
+  if (isDomain(toASCII(resource) || resource)) {
+    return c.redirect(`/domain/${resource}`, 302);
+  }
+  return errResponse(c, 400, "Invalid input. Please provide a valid domain, IP, or ASN.");
+});
+
 export default {
   fetch: app.fetch,
   async scheduled(_event: ScheduledEvent, env: Env, _ctx: ExecutionContext): Promise<void> {
