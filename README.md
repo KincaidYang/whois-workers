@@ -2,7 +2,7 @@
 
 [![中文文档](https://img.shields.io/badge/文档-中文版-blue)](README_ZH.md)
 
-A WHOIS / RDAP lookup service running on Cloudflare Workers, built with TypeScript and [Hono](https://hono.dev). Inspired by [KincaidYang/whois](https://github.com/KincaidYang/whois).
+A WHOIS / RDAP lookup service running on Cloudflare Workers, built with TypeScript and [Hono](https://hono.dev). A Cloudflare Workers rewrite of [KincaidYang/whois](https://github.com/KincaidYang/whois).
 
 Supports domain, IP address, and ASN queries. Results are returned as structured JSON.
 
