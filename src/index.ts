@@ -141,6 +141,8 @@ async function handleDomain(c: C, input: string) {
   const tlds = extractTLDs(domain);
   let result = null;
 
+  // RDAP first — fall through to WHOIS on any failure (including 404) because
+  // RDAP coverage can be incomplete even when WHOIS has full data.
   for (const tld of tlds) {
     const rdapServer = await lookupRdapServer(tld, env.WHOIS_CACHE);
     if (rdapServer) {
@@ -149,19 +151,19 @@ async function handleDomain(c: C, input: string) {
         result = parseRDAPDomain(resp);
         break;
       } catch (err) {
-        if (err instanceof ResourceNotFoundError) {
-          await cacheSet(cacheKey, { data: null, negative: true }, env.WHOIS_CACHE, getNegTTL(env));
-          return errResponse(c, 404, "Domain not found");
-        }
         if (err instanceof QueryDeniedError) return errResponse(c, 403, "Registry denied the query");
+        // ResourceNotFoundError or any other error: fall through to WHOIS
       }
     }
   }
 
+  // WHOIS fallback
   if (!result) {
+    let hadWhoisServer = false;
     for (const tld of tlds) {
       const whoisServer = await lookupWhoisServer(tld, env.WHOIS_CACHE);
       if (!whoisServer) continue;
+      hadWhoisServer = true;
       try {
         const rawText = await queryWhois(whoisServer, domain, getTimeout(env));
         result = parseWhoisResponse(rawText, domain, tld);
@@ -174,6 +176,11 @@ async function handleDomain(c: C, input: string) {
         const msg = err instanceof Error ? err.message : String(err);
         return errResponse(c, 502, `WHOIS query failed: ${msg}`);
       }
+    }
+    // No WHOIS server either — if RDAP had a server but said not-found, report 404
+    if (!result && !hadWhoisServer) {
+      await cacheSet(cacheKey, { data: null, negative: true }, env.WHOIS_CACHE, getNegTTL(env));
+      return errResponse(c, 404, "Domain not found");
     }
   }
 
