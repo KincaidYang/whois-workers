@@ -128,15 +128,14 @@ npm install
 
 # Create a KV namespace
 npx wrangler kv namespace create WHOIS_CACHE
+# Copy the returned id into wrangler.toml [[kv_namespaces]] → id / preview_id
 
-# Local development (replace the id placeholder in wrangler.toml first)
+# Local development
 npm run dev
 
-# Deploy via CLI
+# Deploy
 npm run deploy
 ```
-
-Alternatively, if deploying through the Cloudflare Dashboard (recommended for public repos): go to **Worker → Settings → Bindings**, add a KV Namespace binding named `WHOIS_CACHE`, and select the namespace you created. The dashboard binding takes precedence over `wrangler.toml`.
 
 ### Configuration (`wrangler.toml` vars)
 

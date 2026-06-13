@@ -128,15 +128,14 @@ npm install
 
 # 创建 KV namespace
 npx wrangler kv namespace create WHOIS_CACHE
+# 将返回的 id 填入 wrangler.toml [[kv_namespaces]] 的 id / preview_id
 
-# 本地开发（先将返回的 id 填入 wrangler.toml 的占位符）
+# 本地开发
 npm run dev
 
-# CLI 部署
+# 部署
 npm run deploy
 ```
-
-如果通过 Cloudflare Dashboard 部署（公开仓库推荐）：进入 **Worker → Settings → Bindings**，添加一条 KV Namespace 绑定，变量名填 `WHOIS_CACHE`，选择创建好的 namespace。Dashboard 配置会覆盖 `wrangler.toml` 中的占位符，无需修改代码。
 
 ### 配置项（`wrangler.toml` vars）
 
