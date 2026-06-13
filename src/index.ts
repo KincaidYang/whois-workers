@@ -28,7 +28,9 @@ function getTimeout(env: Env): number {
 }
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
-function errResponse(c: Context<AppEnv, any>, status: number, msg: string) {
+type C = Context<AppEnv, any>;
+
+function errResponse(c: C, status: number, msg: string) {
   return c.json({ error: msg }, status as 400 | 404 | 403 | 429 | 500 | 502 | 503);
 }
 
@@ -50,13 +52,11 @@ app.use("*", async (c, next) => {
   return next();
 });
 
-// Domain query
-app.get("/domain/:resource", async (c) => {
-  const raw = c.req.param("resource").toLowerCase();
-  const ascii = toASCII(raw);
-  if (!isDomain(ascii || raw)) return errResponse(c, 400, "Invalid domain name");
+async function handleDomain(c: C, input: string) {
+  const ascii = toASCII(input);
+  if (!isDomain(ascii || input)) return errResponse(c, 400, "Invalid domain name");
 
-  const domain = ascii || raw;
+  const domain = ascii || input;
   const cacheKey = `domain:${domain}`;
   const env = c.env;
 
@@ -70,62 +70,49 @@ app.get("/domain/:resource", async (c) => {
   const tlds = extractTLDs(domain);
   let result = null;
 
-  // Try RDAP first (for each TLD candidate, longest first)
   for (const tld of tlds) {
     const rdapServer = await lookupRdapServer(tld, env.WHOIS_CACHE);
     if (rdapServer) {
       try {
         const resp = await rdapQueryDomain(domain, rdapServer);
-        const info = parseRDAPDomain(resp);
-        result = info;
+        result = parseRDAPDomain(resp);
         break;
       } catch (err) {
         if (err instanceof ResourceNotFoundError) {
           await cacheSet(cacheKey, { data: null, negative: true }, env.WHOIS_CACHE, getNegTTL(env));
           return errResponse(c, 404, "Domain not found");
         }
-        if (err instanceof QueryDeniedError) {
-          return errResponse(c, 403, "Registry denied the query");
-        }
-        // RDAP failed, fall through to WHOIS
+        if (err instanceof QueryDeniedError) return errResponse(c, 403, "Registry denied the query");
       }
     }
   }
 
-  // Fall back to WHOIS
   if (!result) {
     for (const tld of tlds) {
       const whoisServer = await lookupWhoisServer(tld, env.WHOIS_CACHE);
       if (!whoisServer) continue;
-
       try {
         const raw = await queryWhois(whoisServer, domain, getTimeout(env));
-        const info = parseWhoisResponse(raw, domain, tld);
-        result = info;
+        result = parseWhoisResponse(raw, domain, tld);
         break;
       } catch (err) {
         if (err instanceof DomainNotFoundError) {
           await cacheSet(cacheKey, { data: null, negative: true }, env.WHOIS_CACHE, getNegTTL(env));
           return errResponse(c, 404, "Domain not found");
         }
-        // WHOIS connection/parse failure: return error but don't cache it
         const msg = err instanceof Error ? err.message : String(err);
         return errResponse(c, 502, `WHOIS query failed: ${msg}`);
       }
     }
   }
 
-  if (!result) {
-    return errResponse(c, 404, "No WHOIS or RDAP server found for this domain");
-  }
+  if (!result) return errResponse(c, 404, "No WHOIS or RDAP server found for this domain");
 
   await cacheSet(cacheKey, { data: result }, env.WHOIS_CACHE, getCacheTTL(env));
   return c.json(result);
-});
+}
 
-// IP query
-app.get("/ip/:resource{.+}", async (c) => {
-  const resource = c.req.param("resource").toLowerCase();
+async function handleIP(c: C, resource: string) {
   if (!isIP(resource) && !isCIDR(resource)) {
     return errResponse(c, 400, "Invalid IP address or CIDR prefix");
   }
@@ -140,13 +127,9 @@ app.get("/ip/:resource{.+}", async (c) => {
     return c.json(cached.data);
   }
 
-  // For CIDR input, look up the host address portion for server lookup
   const lookupIP = resource.includes("/") ? resource.split("/")[0] : resource;
   const rdapServer = await lookupIPRdapServer(lookupIP, env.WHOIS_CACHE);
-
-  if (!rdapServer) {
-    return errResponse(c, 404, "No RDAP server found for this IP");
-  }
+  if (!rdapServer) return errResponse(c, 404, "No RDAP server found for this IP");
 
   try {
     const resp = await rdapQueryIP(resource, rdapServer);
@@ -162,14 +145,13 @@ app.get("/ip/:resource{.+}", async (c) => {
     const msg = err instanceof Error ? err.message : String(err);
     return errResponse(c, 502, `RDAP query failed: ${msg}`);
   }
-});
+}
 
-// ASN query
-app.get("/autnum/:resource", async (c) => {
-  const resource = c.req.param("resource").toUpperCase();
-  if (!isASN(resource)) return errResponse(c, 400, "Invalid ASN");
+async function handleASN(c: C, resource: string) {
+  const upper = resource.toUpperCase();
+  if (!isASN(upper)) return errResponse(c, 400, "Invalid ASN");
 
-  const asn = asnNumber(resource);
+  const asn = asnNumber(upper);
   const cacheKey = `asn:${asn}`;
   const env = c.env;
 
@@ -181,9 +163,7 @@ app.get("/autnum/:resource", async (c) => {
   }
 
   const rdapServer = await lookupASNRdapServer(asn, env.WHOIS_CACHE);
-  if (!rdapServer) {
-    return errResponse(c, 404, "No RDAP server found for this ASN");
-  }
+  if (!rdapServer) return errResponse(c, 404, "No RDAP server found for this ASN");
 
   try {
     const resp = await rdapQueryASN(String(asn), rdapServer);
@@ -199,23 +179,22 @@ app.get("/autnum/:resource", async (c) => {
     const msg = err instanceof Error ? err.message : String(err);
     return errResponse(c, 502, `RDAP query failed: ${msg}`);
   }
-});
+}
 
 // Health check
 app.get("/health", (c) => c.json({ status: "ok" }));
 
-// Root auto-detect: /1.1.1.1  /AS13335  /example.com
+// Typed paths
+app.get("/domain/:resource", (c) => handleDomain(c, c.req.param("resource").toLowerCase()));
+app.get("/ip/:resource{.+}", (c) => handleIP(c, c.req.param("resource").toLowerCase()));
+app.get("/autnum/:resource", (c) => handleASN(c, c.req.param("resource")));
+
+// Root auto-detect: /example.com  /1.1.1.1  /AS13335
 app.get("/:resource{.+}", async (c) => {
   const resource = c.req.param("resource").toLowerCase();
-  if (isIP(resource) || isCIDR(resource)) {
-    return c.redirect(`/ip/${resource}`, 302);
-  }
-  if (isASN(resource)) {
-    return c.redirect(`/autnum/${resource}`, 302);
-  }
-  if (isDomain(toASCII(resource) || resource)) {
-    return c.redirect(`/domain/${resource}`, 302);
-  }
+  if (isIP(resource) || isCIDR(resource)) return handleIP(c, resource);
+  if (isASN(resource)) return handleASN(c, resource);
+  if (isDomain(toASCII(resource) || resource)) return handleDomain(c, resource);
   return errResponse(c, 400, "Invalid input. Please provide a valid domain, IP, or ASN.");
 });
 
