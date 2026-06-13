@@ -25,12 +25,28 @@ GET /health           # health check
   "objectClassName": "domain",
   "ldhName": "example.com",
   "registrar": "RESERVED-Internet Assigned Numbers Authority",
-  "status": ["client delete prohibited", "client transfer prohibited"],
+  "registrarIanaId": "376",
+  "status": [
+    "client delete prohibited",
+    "client transfer prohibited",
+    "client update prohibited"
+  ],
   "registrationDate": "1995-08-14T04:00:00Z",
-  "expirationDate": "2025-08-13T04:00:00Z",
-  "lastChangedDate": "2023-08-14T07:01:44Z",
-  "nameservers": ["a.iana-servers.net", "b.iana-servers.net"],
-  "secureDNS": { "delegationSigned": false }
+  "expirationDate": "2026-08-13T04:00:00Z",
+  "lastChangedDate": "2026-01-16T18:26:50Z",
+  "lastUpdateOfRdapDb": "2026-06-13T14:14:56Z",
+  "nameservers": ["elliott.ns.cloudflare.com", "hera.ns.cloudflare.com"],
+  "secureDNS": {
+    "delegationSigned": true,
+    "dsData": [
+      {
+        "keyTag": 2371,
+        "algorithm": 13,
+        "digestType": 2,
+        "digest": "C988EC423E3880EB8DD8A46FE06CA230EE23F35B578D64E78B29C3E1C83D245A"
+      }
+    ]
+  }
 }
 ```
 
@@ -47,7 +63,19 @@ GET /health           # health check
   "name": "APNIC-LABS",
   "type": "ASSIGNED PORTABLE",
   "country": "AU",
-  "status": ["active"]
+  "status": ["active"],
+  "registrationDate": "2011-08-10T23:12:35Z",
+  "lastChangedDate": "2023-04-26T22:57:58Z",
+  "remarks": [
+    {
+      "title": "description",
+      "description": [
+        "APNIC and Cloudflare DNS Resolver project",
+        "Routed globally by AS13335/Cloudflare",
+        "Research prefix for APNIC Labs"
+      ]
+    }
+  ]
 }
 ```
 
@@ -60,7 +88,16 @@ GET /health           # health check
   "handle": "AS13335",
   "name": "CLOUDFLARENET",
   "status": ["active"],
-  "registrationDate": "2010-07-14T18:35:57Z"
+  "registrationDate": "2010-07-14T22:35:57Z",
+  "lastChangedDate": "2017-02-17T23:04:32Z",
+  "remarks": [
+    {
+      "title": "Registration Comments",
+      "description": [
+        "All Cloudflare abuse reporting can be done via https://www.cloudflare.com/abuse"
+      ]
+    }
+  ]
 }
 ```
 
