@@ -1,13 +1,6 @@
 # whois-workers
 
-`github.com/KincaidYang/whois` 的 Cloudflare Workers 重写（TypeScript）。源 Go 服务在 `../whois`。
-
-状态：**调研完成，待实施**。
-
-## 文档
-
-- [docs/feasibility.md](docs/feasibility.md) — 可行性调研：为什么不能直接搬 Go、逐组件可移植性、方案选型。
-- [docs/roadmap.md](docs/roadmap.md) — MVP 实施 roadmap（M0–M5）与移植参照表。
+`github.com/KincaidYang/whois` 的 Cloudflare Workers 重写（TypeScript）。
 
 ## TL;DR
 
