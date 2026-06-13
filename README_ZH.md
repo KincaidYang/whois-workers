@@ -1,6 +1,8 @@
 # whois-workers
 
-基于 Cloudflare Workers 的 WHOIS / RDAP 查询服务，使用 TypeScript 和 [Hono](https://hono.dev) 构建。
+[![English](https://img.shields.io/badge/Docs-English-blue)](README.md)
+
+基于 Cloudflare Workers 的 WHOIS / RDAP 查询服务，使用 TypeScript 和 [Hono](https://hono.dev) 构建。灵感来源于 [KincaidYang/whois](https://github.com/KincaidYang/whois)。
 
 支持域名、IP 地址、ASN 三类查询，结果以结构化 JSON 返回。
 
