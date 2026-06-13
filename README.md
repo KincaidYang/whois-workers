@@ -1,39 +1,110 @@
 # whois-workers
 
-基于 Cloudflare Workers 的 WHOIS / RDAP 查询服务，使用 TypeScript + Hono 构建。
+A WHOIS / RDAP lookup service running on Cloudflare Workers, built with TypeScript and [Hono](https://hono.dev).
 
-支持域名、IP 地址、ASN 三类查询，响应格式与 [KincaidYang/whois](https://github.com/KincaidYang/whois) 保持一致。
+Supports domain, IP address, and ASN queries. Results are returned as structured JSON.
 
-## 功能
-
-- **域名查询**：优先走 RDAP，回退 WHOIS TCP:43（`cloudflare:sockets`）
-- **IP / CIDR 查询**：RDAP，覆盖 IPv4 / IPv6
-- **ASN 查询**：RDAP
-- **多 TLD 解析器**：CN / HK / TW / SO / RU / SB / MO / AU / SG / LA / JP / EU / KR，其余走通用解析器
-- **KV 缓存**：正缓存 TTL 1 小时，负缓存 TTL 60 秒，命中时响应头携带 `X-Cache: HIT`
-- **IANA Bootstrap**：Cron Trigger 每日拉取 IANA RDAP 数据写入 KV，查询时自动覆盖内置映射表
-
-## 接口
+## API
 
 ```
-GET /domain/:name     # 域名，支持 IDN（自动转 punycode）
-GET /ip/:address      # IPv4 / IPv6 / CIDR（如 1.1.1.0/24）
-GET /autnum/:asn      # ASN（AS13335 / 13335）
-GET /health           # 健康检查
+GET /domain/:name     # domain name (IDN supported, auto-converted to punycode)
+GET /ip/:address      # IPv4, IPv6, or CIDR prefix (e.g. 1.1.1.0/24)
+GET /autnum/:asn      # ASN in AS13335 or plain numeric form
+GET /health           # health check
 ```
 
-## 部署
+### Response examples
+
+**Domain**
+
+```jsonc
+// GET /domain/example.com
+{
+  "objectClassName": "domain",
+  "ldhName": "example.com",
+  "registrar": "RESERVED-Internet Assigned Numbers Authority",
+  "status": ["client delete prohibited", "client transfer prohibited"],
+  "registrationDate": "1995-08-14T04:00:00Z",
+  "expirationDate": "2025-08-13T04:00:00Z",
+  "lastChangedDate": "2023-08-14T07:01:44Z",
+  "nameservers": ["a.iana-servers.net", "b.iana-servers.net"],
+  "secureDNS": { "delegationSigned": false }
+}
+```
+
+**IP**
+
+```jsonc
+// GET /ip/1.1.1.1
+{
+  "objectClassName": "ip network",
+  "handle": "1.1.1.0 - 1.1.1.255",
+  "startAddress": "1.1.1.0",
+  "endAddress": "1.1.1.255",
+  "cidr": "1.1.1.0/24",
+  "name": "APNIC-LABS",
+  "type": "ASSIGNED PORTABLE",
+  "country": "AU",
+  "status": ["active"]
+}
+```
+
+**ASN**
+
+```jsonc
+// GET /autnum/13335
+{
+  "objectClassName": "autnum",
+  "handle": "AS13335",
+  "name": "CLOUDFLARENET",
+  "status": ["active"],
+  "registrationDate": "2010-07-14T18:35:57Z"
+}
+```
+
+## Caching
+
+Query results are cached in Workers KV. Cache status is indicated by the `X-Cache` response header (`HIT` / `MISS`).
+
+| Result | TTL |
+|---|---|
+| Found | 1 hour (configurable via `CACHE_TTL`) |
+| Not found / error | 60 seconds (configurable via `NEGATIVE_CACHE_TTL`) |
+
+## RDAP bootstrap
+
+A Cron Trigger runs daily to fetch the latest IANA RDAP bootstrap data and write it to KV. This keeps the server registry up to date without redeployment.
+
+## Supported WHOIS parsers
+
+Dedicated parsers exist for the following TLDs; all others use a generic EPP-style parser.
+
+`.cn` `.hk` `.tw` `.so` `.ru` `.su` `.sb` `.mo` `.au` `.sg` `.la` `.jp` `.eu` `.kr`
+and their IDN equivalents (`.中国` `.香港` `.한국` etc.)
+
+## Deployment
 
 ```bash
 npm install
 
-# 创建 KV namespace
+# Create a KV namespace and copy the returned id into wrangler.toml
 npx wrangler kv namespace create WHOIS_CACHE
-# 将返回的 id 填入 wrangler.toml [[kv_namespaces]]
 
-# 本地开发
+# Local development
 npm run dev
 
-# 部署
+# Deploy
 npm run deploy
 ```
+
+### Configuration (`wrangler.toml` vars)
+
+| Variable | Default | Description |
+|---|---|---|
+| `WHOIS_TIMEOUT` | `10000` | WHOIS TCP timeout in milliseconds |
+| `CACHE_TTL` | `3600` | Positive cache TTL in seconds |
+| `NEGATIVE_CACHE_TTL` | `60` | Negative cache TTL in seconds |
+
+## License
+
+MIT
